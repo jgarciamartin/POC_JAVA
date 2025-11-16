@@ -41,10 +41,12 @@ pipeline {
                 bat """
                     @echo off
                     set CONTAINER_ID=
-                    for /F %%i in ('docker ps -q -f name=%CONTAINER_NAME%') do set CONTAINER_ID=%%i
+                    for /F "tokens=*" %%i in ('docker ps -q -f "name=%CONTAINER_NAME%"') do set CONTAINER_ID=%%i
                     if defined CONTAINER_ID (
-                        docker stop %CONTAINER_NAME%
-                        docker rm %CONTAINER_NAME%
+                        docker stop %CONTAINER_ID%
+                        docker rm %CONTAINER_ID%
+                    ) else (
+                        echo No existe contenedor con nombre %CONTAINER_NAME%
                     )
                 """
             }
