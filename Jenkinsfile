@@ -16,34 +16,33 @@ pipeline {
 
         stage('Build Maven Project') {
             steps {
-                // Compila el proyecto y genera el JAR
-                sh 'mvn clean package -DskipTests'
+                bat 'mvn clean package -DskipTests'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                // Construye la imagen Docker
-                sh "docker build -t ${IMAGE_NAME}:latest ."
+                bat "docker build -t ${IMAGE_NAME}:latest ."
             }
         }
 
         stage('Stop Old Container') {
             steps {
                 // Para y elimina el contenedor viejo si está corriendo
-                sh """
-                if [ \$(docker ps -q -f name=${CONTAINER_NAME}) ]; then
+                bat """
+                set DOCKER_CONTAINER=
+                for /f "tokens=*" %%i in ('docker ps -q -f name=${CONTAINER_NAME}') do set DOCKER_CONTAINER=%%i
+                if not "%DOCKER_CONTAINER%"=="" (
                     docker stop ${CONTAINER_NAME}
                     docker rm ${CONTAINER_NAME}
-                fi
+                )
                 """
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                // Ejecuta el contenedor con puerto mapeado
-                sh "docker run -d --name ${CONTAINER_NAME} -p ${PORT}:8000 ${IMAGE_NAME}:latest"
+                bat "docker run -d --name ${CONTAINER_NAME} -p ${PORT}:8000 ${IMAGE_NAME}:latest"
             }
         }
     }
