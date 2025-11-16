@@ -39,7 +39,7 @@ pipeline {
             steps {
                 echo "⏹ Deteniendo contenedor antiguo si existe..."
                 bat """
-                    for /f "tokens=*" %%i in ('docker ps -q -f name=%CONTAINER_NAME%') do (
+                    for /F "tokens=*" %%i in ('docker ps -q -f "name=%CONTAINER_NAME%"') do (
                         docker stop %%i
                         docker rm %%i
                     )
