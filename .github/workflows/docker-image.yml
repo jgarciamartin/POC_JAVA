@@ -1,0 +1,81 @@
+name: Java Docker CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # permite ejecutar manualmente
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+
+    env:
+      IMAGE_NAME: hola-mundo
+      CONTAINER_NAME: hola-mundo
+      PORT: 8000
+
+    steps:
+      # 1️⃣ Limpiar workspace
+      - name: Clean workspace
+        run: |
+          Write-Host "🧹 Limpiando workspace..."
+          Remove-Item -Recurse -Force *
+        shell: pwsh
+
+      # 2️⃣ Checkout del repo
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 3️⃣ Setup Java
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # 4️⃣ Build Maven project
+      - name: Build Maven project
+        run: |
+          Write-Host "📦 Compilando proyecto Maven..."
+          mvn clean package -DskipTests
+        shell: pwsh
+
+      # 5️⃣ Build Docker image
+      - name: Build Docker image
+        run: |
+          Write-Host "🐳 Construyendo imagen Docker..."
+          docker build -t $env:IMAGE_NAME:latest .
+        shell: pwsh
+
+      # 6️⃣ Stop old container if exists
+      - name: Stop old container
+        run: |
+          Write-Host "⏹ Deteniendo contenedor antiguo si existe..."
+          $container = docker ps -q -f "name=$env:CONTAINER_NAME"
+          if ($container) {
+              docker stop $container
+              docker rm $container
+          } else {
+              Write-Host "No existe contenedor $env:CONTAINER_NAME"
+          }
+        shell: pwsh
+
+      # 7️⃣ Run Docker container
+      - name: Run Docker container
+        run: |
+          Write-Host "🏃‍♂️ Ejecutando contenedor..."
+          docker run -d --name $env:CONTAINER_NAME -p $env:PORT:8000 $env:IMAGE_NAME:latest
+        shell: pwsh
+
+      # 8️⃣ Post: success message
+      - name: Success
+        if: success()
+        run: Write-Host "✅ Despliegue completado. La app está corriendo en http://localhost:$env:PORT"
+        shell: pwsh
+
+      # 9️⃣ Post: failure message
+      - name: Failure
+        if: failure()
+        run: Write-Host "❌ Error en el workflow"
+        shell: pwsh
